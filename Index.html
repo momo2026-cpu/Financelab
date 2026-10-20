@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FinanceLab · 金融学习工具</title>
+
+<!-- ===== PWA 基础 ===== -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0b1220">
+
+<!-- ===== iOS 专用（关键） ===== -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FinanceLab">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#0b1220; --panel:#121b2e; --panel2:#182338; --line:#24344f;
+    --text:#e6edf7; --muted:#8b9cb6; --accent:#34d399; --accent2:#38bdf8;
+    --danger:#f87171;
+  }
+  html,body{background:var(--bg)}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",system-ui,sans-serif;
+    background:radial-gradient(1200px 600px at 70% -10%,#152a45 0%,var(--bg) 55%);
+    background-attachment:fixed;
+    color:var(--text);min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+
+  /* ---------- 侧栏 ---------- */
+  .sidebar{
+    background:rgba(18,27,46,.85);backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    border-right:1px solid var(--line);padding:22px 14px;
+    display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;
+  }
+  .logo{font-size:17px;font-weight:700;letter-spacing:.5px;padding:0 8px 18px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .nav-btn{
+    display:block;width:100%;text-align:left;padding:11px 12px;border-radius:10px;
+    background:transparent;border:1px solid transparent;color:var(--muted);
+    font-size:14px;cursor:pointer;transition:.18s;font-family:inherit;
+  }
+  .nav-btn:hover{background:var(--panel2);color:var(--text)}
+  .nav-btn.active{background:linear-gradient(90deg,rgba(52,211,153,.16),rgba(56,189,248,.10));
+    color:var(--text);border-color:rgba(52,211,153,.35)}
+  .side-foot{margin-top:auto;font-size:11px;color:#5c6d88;padding:12px 8px;line-height:1.6}
+
+  /* ---------- 主区 ---------- */
+  main{padding:28px 34px 60px;max-width:1080px;width:100%}
+  h1{font-size:24px;margin-bottom:6px}
+  h2{font-size:17px;margin:26px 0 12px}
+  .sub{color:var(--muted);font-size:13.5px;line-height:1.7}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}
+
+  /* 概览 */
+  .hero{display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+  .ring{
+    width:112px;height:112px;border-radius:50%;flex:none;
+    display:grid;place-items:center;position:relative;
+    background:conic-gradient(var(--accent) calc(var(--p)*1%), #1d2b44 0);
+  }
+  .ring::after{content:"";position:absolute;inset:9px;border-radius:50%;background:var(--panel)}
+  .ring span{position:relative;z-index:1;font-size:22px;font-weight:700}
+  .stat{font-size:26px;font-weight:700;color:var(--accent)}
+  .stat.blue{color:var(--accent2)}
+  .stat-label{font-size:12.5px;color:var(--muted);margin-top:2px}
+
+  /* 课程 */
+  .course{
+    text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:16px 18px;cursor:pointer;transition:.18s;font-family:inherit;color:var(--text);width:100%;
+  }
+  .course:hover{transform:translateY(-2px);border-color:#33507a;background:var(--panel2)}
+  .course .tag{font-size:11px;color:var(--accent);border:1px solid rgba(52,211,153,.35);
+    padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:9px}
+  .course .tag.done{color:var(--accent2);border-color:rgba(56,189,248,.4)}
+  .course h3{font-size:15px;margin-bottom:6px}
+  .course p{font-size:12.5px;color:var(--muted);line-height:1.65}
+  .course .meta{font-size:11.5px;color:#5c6d88;margin-top:10px}
+
+  /* 课程详情 */
+  .back{background:none;border:none;color:var(--accent2);cursor:pointer;font-size:13.5px;
+    margin-bottom:16px;font-family:inherit;padding:0}
+  .back:hover{text-decoration:underline}
+  .article p{font-size:14.5px;line-height:1.95;color:#c8d5e8;margin-bottom:14px}
+  .points{list-style:none;margin:6px 0 20px}
+  .points li{font-size:13.5px;line-height:1.8;color:#b9c8de;padding-left:20px;position:relative;margin-bottom:7px}
+  .points li::before{content:"▸";position:absolute;left:0;color:var(--accent)}
+
+  /* 按钮 */
+  .btn{
+    background:linear-gradient(135deg,var(--accent),#22a58a);color:#04180f;border:none;
+    padding:12px 22px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;
+    font-family:inherit;transition:.18s;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn.ghost{background:transparent;color:var(--accent2);border:1px solid #2c4a70;font-weight:500}
+
+  /* 测验 */
+  .quiz-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+  .bar{height:6px;background:#1d2b44;border-radius:99px;overflow:hidden;margin-bottom:22px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+    transition:width .3s;border-radius:99px}
+  .q-text{font-size:16px;line-height:1.7;margin-bottom:18px;font-weight:500}
+  .opt{
+    display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:10px;
+    background:var(--panel2);border:1px solid var(--line);border-radius:11px;
+    color:#ccd9ec;font-size:14px;cursor:pointer;font-family:inherit;transition:.15s;line-height:1.6;
+  }
+  .opt:active:not(.locked){transform:scale(.99)}
+  .opt.locked{cursor:default}
+  .opt.correct{border-color:var(--accent);background:rgba(52,211,153,.13);color:#c9ffe9}
+  .opt.wrong{border-color:var(--danger);background:rgba(248,113,113,.12);color:#ffd6d6}
+  .explain{margin-top:14px;padding:14px 16px;border-left:3px solid var(--accent2);
+    background:rgba(56,189,248,.07);border-radius:0 10px 10px 0;font-size:13.5px;line-height:1.8;color:#b9cde4}
+  .explain b{color:var(--accent2)}
+
+  /* 计算器 */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+  .tab{background:var(--panel);border:1px solid var(--line);color:var(--muted);
+    padding:9px 16px;border-radius:99px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s}
+  .tab.active{background:rgba(52,211,153,.14);border-color:rgba(52,211,153,.45);color:var(--accent)}
+  .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+  .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px}
+  .field input{
+    width:100%;padding:12px 13px;background:#0d1729;border:1px solid var(--line);
+    border-radius:9px;color:var(--text);font-size:16px;font-family:inherit;outline:none;transition:.15s;
+  }
+  .field input:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(56,189,248,.12)}
+  .result{background:linear-gradient(135deg,rgba(52,211,153,.09),rgba(56,189,248,.07));
+    border:1px solid rgba(52,211,153,.28);border-radius:13px;padding:20px;
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px}
+  .result .k{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .result .v{font-size:21px;font-weight:700;color:var(--accent);word-break:break-all}
+  .result .v.b{color:var(--accent2)}
+  .note{font-size:12px;color:#5c6d88;margin-top:14px;line-height:1.7}
+
+  /* ---------- 移动端：iPhone 适配 ---------- */
+  @media(max-width:760px){
+    .app{grid-template-columns:1fr}
+    .sidebar{
+      position:sticky;top:0;height:auto;flex-direction:row;overflow-x:auto;
+      padding:10px 12px;
+      padding-top:calc(10px + env(safe-area-inset-top));
+      gap:6px;z-index:20;border-right:none;border-bottom:1px solid var(--line);
+      -webkit-overflow-scrolling:touch;
+    }
+    .sidebar::-webkit-scrollbar{display:none}
+    .logo{display:none}
+    .nav-btn{white-space:nowrap;width:auto;padding:9px 14px;font-size:13px;flex:none}
+    .side-foot{display:none}
+    main{
+      padding:20px 16px 50px;
+      padding-top:calc(20px + env(safe-area-inset-top));
+      padding-bottom:calc(50px + env(safe-area-inset-bottom));
+    }
+    h1{font-size:21px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">💰 FinanceLab</div>
+    <button class="nav-btn active" data-view="dash">📊 学习概览</button>
+    <button class="nav-btn" data-view="courses">📚 知识库</button>
+    <button class="nav-btn" data-view="quiz">🧠 随堂测验</button>
+    <button class="nav-btn" data-view="calc">🧮 金融计算器</button>
+    <div class="side-foot">进度保存在本机浏览器<br>不涉及任何投资建议</div>
+  </aside>
+  <main><div id="view"></div></main>
+</div>
+
+<script>
+/* =========================================================
+   数据层：课程 + 题库
+   ========================================================= */
+const COURSES = [
+{
+  id:'tvm', cat:'基础', title:'货币时间价值', minutes:8,
+  summary:'同样100元，今天的和一年后的并不等价——这是所有金融决策的起点。',
+  points:[
+    '终值 FV = PV × (1+r)^n；现值 PV = FV ÷ (1+r)^n',
+    '折现率 = 无风险利率 + 通胀补偿 + 风险溢价',
+    '折现率越高，未来同样一笔钱今天越不值钱'
+  ],
+  body:[
+    '货币时间价值（Time Value of Money）是金融学的第一块基石。在理想世界里，今天拿到1元比明天拿到1元更好，因为今天的1元可以立刻投资生息。反过来说，未来的1元折回到今天，就要打一个折扣。',
+    '这个"打折"用的利率叫折现率。它至少包含三部分：资金的无风险回报、通货膨胀造成的购买力损失补偿，以及承担不确定性所要求的风险溢价。',
+    '这条公式决定了大量现实决策：房贷要不要提前还、保险的现金价值划不划算、一家公司值不值得收购——本质上都是在比较发生在不同时间点上的现金流。'
+  ],
+  quiz:[
+    {q:'假设无风险利率为 5%，且不考虑通胀与税收，今天的 100 元与一年后的 105 元相比：',
+     options:['今天的 100 元更值钱','一年后的 105 元更值钱','两者在经济上等价','无法比较'],
+     a:2, why:'100 × (1+5%) = 105，两者在给定假设下现值相等，是等价的。'},
+    {q:'其他条件不变，提高折现率会使未来现金流的现值：',
+     options:['上升','下降','不变','先升后降'],
+     a:1, why:'折现率在分母上，PV = FV ÷ (1+r)^n，r 越大现值越小。'}
+  ]
+},
+{
+  id:'compound', cat:'基础', title:'复利与 72 法则', minutes:7,
+  summary:'复利是世界第八大奇迹，72 法则让你三秒心算翻倍时间。',
+  points:[
+    'FV = PV × (1+r)^n，利息本身也会产生利息',
+    '72 法则：翻倍年数 ≈ 72 ÷ 年化收益率(%)',
+    '时间比收益率更重要——早开始 10 年的优势极难追上'
+  ],
+  body:[
+    '单利只对本金计息，复利则对本金加已产生的利息一起计息。短期看差别不大，长期看是指数级的分野：年化 8%，10 年约 2.16 倍，30 年约 10.06 倍，40 年约 21.7 倍。',
+    '72 法则是一个心算工具：用 72 除以年化收益率，就得到本金翻倍大约需要的年数。年化 8% 约 9 年翻倍，年化 6% 约 12 年，年化 12% 约 6 年。',
+    '复利的另一面是负债。信用卡循环利息年化常在 15% 以上，意味着欠款不到 5 年就翻一倍——所以高息负债要优先清偿，这等于一笔无风险的"投资回报"。'
+  ],
+  quiz:[
+    {q:'按 72 法则，年化收益率 8% 时本金翻倍大约需要：',
+     options:['约 6 年','约 9 年','约 12 年','约 18 年'],
+     a:1, why:'72 ÷ 8 = 9 年。精确计算为 ln2 / ln1.08 ≈ 9.01 年。'},
+    {q:'年化 10% 复利，10 年后 1 万元大约变成：',
+     options:['2 万元','约 2.59 万元','10 万元','1.1 万元'],
+     a:1, why:'1 × (1.1)^10 ≈ 2.594 万元。单利只有 2 万元，差额来自复利。'},
+    {q:'关于复利，下列说法错误的是：',
+     options:['利息也会继续产生利息','时间越长复利效应越显著','信用卡高息负债也应尽量拖延偿还','早开始投资比追求高收益率更可控'],
+     a:2, why:'高息负债的复利对你不利，应优先偿还，相当于获得无风险高回报。'}
+  ]
+},
+{
+  id:'risk', cat:'基础', title:'风险与收益的关系', minutes:8,
+  summary:'高收益不是免费的，它是对承担风险的补偿，而且只补偿"系统性风险"。',
+  points:[
+    '预期收益 = 无风险利率 + 风险溢价',
+    '总风险 = 系统性风险（不可分散）+ 非系统性风险（可分散）',
+    '市场只奖励系统性风险，非系统性风险不带来额外补偿'
+  ],
+  body:[
+    '在有效市场里，不存在"高收益低风险"的免费午餐。想要更高的预期回报，就必须接受更大的波动和亏损可能性。这是投资世界最基本的交换关系。',
+    '风险分为两类。系统性风险来自整个市场：利率变化、经济衰退、战争与政策，无法通过分散持股消除，因此市场会为承担它支付溢价。非系统性风险来自单个公司：业绩暴雷、管理层丑闻、单一产品失败，这类风险可以通过分散投资大幅降低，所以市场不为它付费。',
+    '一个常见的误区是把"过去涨得好"当成"风险低"。历史高收益往往伴随高波动，只是波动还没兑现成亏损而已。'
+  ],
+  quiz:[
+    {q:'根据现代投资组合理论，市场会为以下哪种风险提供补偿？',
+     options:['非系统性风险','系统性风险','所有风险','操作失误风险'],
+     a:1, why:'非系统性风险可以通过分散消除，市场不为它付费；只有系统性风险获得风险溢价。'},
+    {q:'某人说"这个产品保本还能年化 15%"，最合理的判断是：',
+     options:['值得立刻买入','大概率存在未披露的风险或欺诈','这是复利的力量','应该加杠杆买入'],
+     a:1, why:'收益与风险匹配是基本规律，高收益保本承诺通常意味着风险被隐藏或本身是骗局。'}
+  ]
+},
+{
+  id:'diversify', cat:'投资', title:'分散投资与相关性', minutes:7,
+  summary:'分散的关键不是"买很多只"，而是买相关性低的资产。',
+  points:[
+    '组合波动取决于资产间的相关性，而非资产数量',
+    '相关系数越低，分散效果越好（+1 完全同向，-1 完全反向）',
+    '分散能降低波动，但不能消除系统性风险'
+  ],
+  body:[
+    '把资金分成十份买入十只科技股，并不叫分散——它们会一起涨、一起跌。真正的分散需要资产之间"不同步"。',
+    '相关系数是衡量两个资产走势同步程度的指标，范围从 -1 到 +1。相关系数越接近 -1，组合的波动下降得越明显。股票与债券、发达市场与新兴市场、本币资产与外币资产，通常呈现较低相关性。',
+    '需要清醒认识到：分散只能降低非系统性风险，市场整体下跌时几乎所有风险资产会同时下跌。分散让你活得更久，但不能让你在市场崩盘时独善其身。'
+  ],
+  quiz:[
+    {q:'分散投资降低组合风险，最关键的因素是：',
+     options:['持有资产的数量足够多','资产之间的相关性足够低','每只资产都选行业龙头','买入后长期不看'],
+     a:1, why:'数量不是关键。十只高相关股票的组合，波动几乎等于一只股票。'},
+    {q:'当两个资产的相关系数为 -1 时，意味着：',
+     options:['它们完全同向波动','它们完全反向波动','它们毫无关系','它们的收益必然为正'],
+     a:1, why:'-1 表示完全负相关，是理论上分散效果最好的极端情况。'}
+  ]
+},
+{
+  id:'alloc', cat:'投资', title:'资产配置', minutes:8,
+  summary:'决定你长期收益的，主要不是选股，而是股债比例。',
+  points:[
+    '资产配置贡献了组合波动的主要部分',
+    '股票比例 ≈ 可承受的最大回撤 × 2（经验法则）',
+    '再平衡：定期把偏离的配置比例拉回目标'
+  ],
+  body:[
+    '资产配置指的是把资金分配到股票、债券、现金、商品、房产等大类资产上的比例。学术研究反复发现，组合的波动绝大部分由大类配置决定，而不是由具体选了哪只股票决定。',
+    '一个简单的经验法则：你能承受的最大回撤乘以 2，大致对应可以配置的股票比例。如果你看到账户缩水 20% 就会失眠，那么股票仓位控制在 40% 左右更合适。',
+    '再平衡是资产配置的执行环节。设定目标比例后，定期（比如每年一次）把涨多的卖掉、跌多的补上，恢复原比例。这个动作天然实现了"高抛低吸"，也控制了风险敞口的漂移。'
+  ],
+  quiz:[
+    {q:'对长期投资组合波动影响最大的通常是：',
+     options:['个股选择','股债等大类资产的配置比例','买入的具体时点','交易手续费'],
+     a:1, why:'大类资产配置决定了组合的整体风险特征，选股的影响远小于它。'},
+    {q:'如果投资者只能承受 20% 的最大回撤，按经验法则股票仓位宜约为：',
+     options:['20%','40%','70%','90%'],
+     a:1, why:'经验法则：股票比例 ≈ 最大可承受回撤 × 2，20% × 2 = 40%。'}
+  ]
+},
+{
+  id:'stock', cat:'投资', title:'股票基础', minutes:8,
+  summary:'买股票就是买公司的一部分所有权，收益来自分红和盈利增长。',
+  points:[
+    '股东是剩余索取权人：分红在债权人之后',
+    '长期收益 ≈ 股息率 + 盈利增长 + 估值变化',
+    '短期股价由情绪和资金驱动，长期由盈利驱动'
+  ],
+  body:[
+    '股票代表公司的部分所有权。作为股东，你在债权人之后获得剩余收益：公司经营好，你分享利润增长；公司破产，你排在最后受偿。',
+    '持有股票的长期回报可以拆成三块：股息率、每股盈利的增长、以及估值（市盈率）的变化。前两项由企业基本面决定，是可持续的；第三项由市场情绪决定，长期看均值回归，不能无限寄望。',
+    '这解释了一个现象：短期股价和公司业绩常常脱节，因为短期由资金与情绪主导；但把时间拉长到十年以上，股价与盈利的相关性会显著提升。'
+  ],
+  quiz:[
+    {q:'股票投资者的长期收益主要来源于：',
+     options:['股息 + 企业盈利增长 + 估值变化','单纯的股价波动','公司债券利息','银行存款利率'],
+     a:0, why:'长期回报由股息、盈利增长、估值变化三部分构成，其中前两项最具可持续性。'},
+    {q:'在公司破产清算时，股东的受偿顺序是：',
+     options:['优先于债权人','与债权人同时','在债权人之后','优先于所有方'],
+     a:2, why:'股东是剩余索取权人，必须在债权人和优先股股东之后才轮到普通股。'}
+  ]
+},
+{
+  id:'bond', cat:'投资', title:'债券与利率', minutes:8,
+  summary:'债券价格和市场利率是跷跷板：利率上行，债券价格下跌。',
+  points:[
+    '债券价格与市场利率反向变动',
+    '期限越长、票息越低，对利率越敏感（久期越大）',
+    '债券同样有信用风险，不是绝对安全'
+  ],
+  body:[
+    '债券是借钱给发行人的凭证，约定还本付息。你买入时的到期收益率，就是你持有到期的年化回报——前提是发行人不违约。',
+    '债券价格与市场利率反向变动。原因是：如果市场利率升到 5%，你手里票息 3% 的老债券就不香了，必须折价卖出才能匹配市场收益率。期限越长，这种价格波动越剧烈，这个敏感度用「久期」衡量。',
+    '债券并非无风险。除了利率风险，还有信用风险（发行人违约）和通胀风险（固定票息被通胀侵蚀）。所谓"无风险利率"通常特指主权信用等级最高的短中期国债收益率。'
+  ],
+  quiz:[
+    {q:'当市场利率上升时，已发行的固定利率债券价格通常：',
+     options:['上涨','下跌','不变','先跌后涨'],
+     a:1, why:'新债票息更高，老债必须折价才能有竞争力，因此价格下跌。'},
+    {q:'以下哪种债券对利率变动最敏感？',
+     options:['1 年期低票息债','30 年期低票息债','1 年期高票息债','30 年期高票息债'],
+     a:1, why:'期限越长、票息越低，久期越大，对利率变动越敏感。'}
+  ]
+},
+{
+  id:'fund', cat:'投资', title:'指数基金与费率', minutes:7,
+  summary:'费率是唯一确定的负收益，长期看它的影响远超你的想象。',
+  points:[
+    '指数基金跟踪指数，费率低、透明度高',
+    '年费率差 1%，30 年可能吃掉约四分之一的终值',
+    '主动基金长期跑赢基准的比例并不高'
+  ],
+  body:[
+    '指数基金不做个股精选，而是按规则复制某个指数的成分股，目标是获得市场平均回报。它的优势很直接：管理费低、换手率低、持仓透明、不依赖某位基金经理。',
+    '费率的影响常被低估。假设市场年化 7%，30 年后 1 万元变成约 7.61 万元；如果每年多付 1% 费率，年化变成 6%，终值约 5.74 万元——少了约 25%。而且这是确定发生的成本。',
+    '主动管理并非没有价值，但长期看，扣除费用后能持续跑赢基准的基金是少数。对大多数普通投资者，低成本指数基金是性价比很高的默认选项。'
+  ],
+  quiz:[
+    {q:'指数基金的核心优势不包括：',
+     options:['管理费率低','持仓透明','保证跑赢市场','分散持有降低个股风险'],
+     a:2, why:'指数基金的目标是获得市场平均回报，并不保证跑赢市场。'},
+    {q:'年费率相差 1%，在长期复利下会产生什么影响？',
+     options:['几乎可以忽略','显著拉低最终收益','完全没有影响','只影响一年'],
+     a:1, why:'费率的侵蚀同样享受复利放大，长期可能吃掉两成以上的终值。'}
+  ]
+},
+{
+  id:'report', cat:'财务', title:'财报三张表', minutes:9,
+  summary:'资产负债表看家底，利润表看业绩，现金流量表看真金白银。',
+  points:[
+    '资产负债表：某一时点的资产 = 负债 + 所有者权益',
+    '利润表：一段期间的收入 - 费用 = 利润（含非现金项）',
+    '现金流量表：经营活动现金流才是造血能力的照妖镜'
+  ],
+  body:[
+    '资产负债表是"照片"，反映某一时点的家底：资产 = 负债 + 所有者权益。它告诉你公司有多少钱、欠多少钱、股东占多少。',
+    '利润表是"录像"，反映一段期间的经营成果。但利润包含大量会计估计与应计项目，比如赊销确认的收入还没收到钱，折旧摊销是费用但不流出现金——所以利润好不等于有钱。',
+    '现金流量表补上这块。经营活动现金流最能反映真实造血能力。一个经典的危险信号是：净利润连年增长，经营现金流却持续为负或远低于净利润，往往意味着应收账款堆积或收入质量存疑。'
+  ],
+  quiz:[
+    {q:'反映企业在某一特定时点财务状况的报表是：',
+     options:['资产负债表','利润表','现金流量表','所有者权益变动表'],
+     a:0, why:'资产负债表是时点快照；利润表和现金流量表反映一段期间。'},
+    {q:'净利润持续增长但经营现金流长期为负，最可能提示：',
+     options:['公司非常有成长性','应收账款堆积、收入质量存疑','公司现金充裕','无需关注'],
+     a:1, why:'利润是会计数字，现金流是真实收付。长期背离通常意味着回款困难或收入虚增。'}
+  ]
+},
+{
+  id:'valuation', cat:'财务', title:'估值指标 PE / PB', minutes:8,
+  summary:'PE 告诉你为每 1 元利润付了多少钱，但它有前提条件。',
+  points:[
+    'PE = 市值 ÷ 净利润，倒数即盈利收益率',
+    'PB = 市值 ÷ 净资产，适合重资产和金融行业',
+    '周期股在盈利高点 PE 最低，此时往往最危险'
+  ],
+  body:[
+    '市盈率 PE = 市值 ÷ 净利润，含义是"为每 1 元年度利润支付的价格"。PE 为 20 倍，意味着静态看需要 20 年利润才能收回成本；它的倒数 5% 就是盈利收益率，可以和债券收益率对比。',
+    'PE 的局限很明显：净利润为负时失效；利润受会计政策和一次性损益影响；对周期行业尤其危险——周期股在盈利顶峰时 PE 看起来最低，恰恰是最该警惕的时候。',
+    '市净率 PB = 市值 ÷ 净资产，更适合银行、保险、制造业等资产驱动型行业。对于轻资产的科技公司，账面净资产参考价值有限，PB 意义不大。'
+  ],
+  quiz:[
+    {q:'某公司市盈率为 20 倍，这通常意味着：',
+     options:['股价是每股净资产的 20 倍','市值是年净利润的 20 倍','每年分红 20%','负债是净利润的 20 倍'],
+     a:1, why:'PE = 市值 ÷ 净利润，20 倍即市值等于年净利润的 20 倍。'},
+    {q:'对于强周期行业，在盈利高点时 PE 往往很低，此时应当：',
+     options:['认为低估，果断买入','保持警惕，低 PE 可能是盈利见顶的信号','PE 越低越安全','完全忽略 PE'],
+     a:1, why:'周期股利润见顶时 PE 被压低，一旦利润下滑，PE 会迅速飙升，此时反而是高风险区。'}
+  ]
+},
+{
+  id:'inflation', cat:'基础', title:'通货膨胀与购买力', minutes:6,
+  summary:'名义收益 6%、通胀 3%，你的实际收益不是 3%，而是约 2.9%。',
+  points:[
+    '实际收益率 ≈ (1+名义) ÷ (1+通胀) − 1',
+    '通胀是"隐形的税"，长期侵蚀现金购买力',
+    '投资的最低目标应是跑赢通胀，而非跑赢邻居'
+  ],
+  body:[
+    '通货膨胀是整体物价水平的持续上涨。它不会出现在你的账单上，却实实在在侵蚀购买力：年通胀 3%，24 年后 100 元的购买力只剩约 50 元。',
+    '实际收益率的精确公式是 (1+名义收益率) ÷ (1+通胀率) − 1，而不是简单相减。名义 6%、通胀 3% 时，实际约 2.91%，略
